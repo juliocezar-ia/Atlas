@@ -27,7 +27,7 @@ function loadAgenda(): StoredAgenda {
   } catch { return { active: [], archived: [] } }
 }
 
-function safeItems(value: unknown): RoutineItem[] { return Array.isArray(value) ? value.slice(0, MAX_ITEMS).filter(isRoutineItem) : [] }
+function safeItems(value: unknown): RoutineItem[] { return Array.isArray(value) ? value.filter(isRoutineItem).slice(0, MAX_ITEMS) : [] }
 
 function isRoutineItem(value: unknown): value is RoutineItem {
   if (!value || typeof value !== 'object') return false
@@ -52,7 +52,7 @@ export default function App() {
   const organize = (value = note) => {
     if (!value.trim()) return
     if (value.length > MAX_NOTE_LENGTH) { setStatus('Sua anotação é longa demais. Divida-a em duas capturas.'); return }
-    const next = organizeVoiceNote(value).slice(0, MAX_ITEMS)
+    const next = safeItems(organizeVoiceNote(value))
     setAgenda((current) => ({ ...current, active: next }))
     setView('today')
     setStatus(`${next.length} itens entendidos. Sua agenda ficou clara.`)
@@ -66,7 +66,14 @@ export default function App() {
     recognition.interimResults = true
     let failed = false
     recognition.onstart = () => { setListening(true); setStatus('Ouvindo. Diga tudo que está na sua cabeça.') }
-    recognition.onresult = (event: any) => setNote(Array.from(event.results).map((result: any) => result[0].transcript).join('').slice(0, MAX_NOTE_LENGTH))
+    recognition.onresult = (event: any) => {
+      let transcript = ''
+      for (let index = 0; index < event.results.length && transcript.length < MAX_NOTE_LENGTH; index += 1) {
+        const part = String(event.results[index][0].transcript)
+        transcript += part.slice(0, MAX_NOTE_LENGTH - transcript.length)
+      }
+      setNote(transcript)
+    }
     recognition.onerror = () => { failed = true; setStatus('Não foi possível ouvir você. Tente de novo ou digite sua ideia.') }
     recognition.onend = () => { setListening(false); if (!failed) setStatus('Revise a transcrição e organize seu dia.') }
     recognition.start()
