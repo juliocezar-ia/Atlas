@@ -32,5 +32,14 @@ describe('organizeVoiceNote', () => {
     expect(items.every((item) => item.source.length <= 1000)).toBe(true)
     expect(items.every((item) => item.title.length <= 500)).toBe(true)
   })
+
+  it('understands a natural English voice capture', () => {
+    const items = organizeVoiceNote('team sync at 9 for one hour, then gym at 6pm for 45 minutes and I need to send the proposal')
+
+    expect(items).toHaveLength(3)
+    expect(items[0]).toMatchObject({ title: 'Team sync', start: '09:00', duration: 60 })
+    expect(items[1]).toMatchObject({ title: 'Gym', start: '18:00', duration: 45 })
+    expect(items[2]).toMatchObject({ title: 'Send the proposal', kind: 'task' })
+  })
 })
 
