@@ -11,8 +11,9 @@ export type RoutineItem = {
 const MAX_NOTE_LENGTH = 10_000
 const MAX_ITEMS = 200
 const MAX_SOURCE_LENGTH = 1_000
+const MAX_TITLE_LENGTH = 500
 
-const titleCase = (value: string) => value.trim().replace(/\s+/g, ' ').replace(/^./, (letter) => letter.toUpperCase())
+const titleCase = (value: string) => value.trim().replace(/\s+/g, ' ').replace(/^./, (letter) => letter.toUpperCase()).slice(0, MAX_TITLE_LENGTH)
 const cleanTitle = (value: string) => titleCase(value
   .replace(/^(amanhã|hoje|depois|então|e|eu|preciso|tenho que|vou|toda segunda)\s+/i, '')
   .replace(/^às?\s+\d{1,2}(?::\d{2})?\s+/i, '')
