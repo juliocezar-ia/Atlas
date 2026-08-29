@@ -14,7 +14,7 @@ const MAX_TEXT_LENGTH = 500
 const MAX_SOURCE_LENGTH = 1_000
 const MAX_DURATION = 24 * 60
 const MAX_STORAGE_CHARS = 512_000
-const example = 'reunião com a Júlia às 9 por uma hora, depois academia às 18 por 45 minutos e preciso enviar a proposta'
+const example = 'team sync at 9 for one hour, gym at 6pm for 45 minutes, and send the client proposal'
 
 function loadAgenda(): StoredAgenda {
   try {
@@ -42,30 +42,30 @@ export default function App() {
   const [note, setNote] = useState('')
   const [agenda, setAgenda] = useState<StoredAgenda>(loadAgenda)
   const [listening, setListening] = useState(false)
-  const [status, setStatus] = useState('Fale naturalmente. O Atlas organiza sua agenda.')
+  const [status, setStatus] = useState('Speak naturally. Atlas will shape the day.')
   const scheduled = useMemo(() => agenda.active.filter((item) => item.start), [agenda.active])
   const tasks = useMemo(() => agenda.active.filter((item) => !item.start), [agenda.active])
 
   useEffect(() => { document.documentElement.dataset.theme = theme; localStorage.setItem(THEME_KEY, theme) }, [theme])
-  useEffect(() => { try { const serialized = JSON.stringify(agenda); if (serialized.length <= MAX_STORAGE_CHARS) localStorage.setItem(DATA_KEY, serialized); else setStatus('A agenda atingiu o limite local. Conclua ou limpe alguns itens.') } catch { setStatus('Não foi possível salvar a agenda neste navegador.') } }, [agenda])
+  useEffect(() => { try { const serialized = JSON.stringify(agenda); if (serialized.length <= MAX_STORAGE_CHARS) localStorage.setItem(DATA_KEY, serialized); else setStatus('Your local agenda is full. Complete or clear a few items.') } catch { setStatus('This browser could not save your agenda.') } }, [agenda])
 
   const organize = (value = note) => {
     if (!value.trim()) return
-    if (value.length > MAX_NOTE_LENGTH) { setStatus('Sua anotação é longa demais. Divida-a em duas capturas.'); return }
+    if (value.length > MAX_NOTE_LENGTH) { setStatus('That note is too long. Split it into two captures.'); return }
     const next = safeItems(organizeVoiceNote(value))
     setAgenda((current) => ({ ...current, active: next }))
     setView('today')
-    setStatus(`${next.length} itens entendidos. Sua agenda ficou clara.`)
+    setStatus(`${next.length} items understood. Your day is clear.`)
   }
 
   const listen = () => {
     const Speech = (window as SpeechWindow).SpeechRecognition ?? (window as SpeechWindow).webkitSpeechRecognition
-    if (!Speech) { setStatus('Voz não está disponível neste navegador. Digite sua ideia abaixo.'); return }
+    if (!Speech) { setStatus('Voice is not available here. Type your thought below.'); return }
     const recognition = new Speech()
-    recognition.lang = 'pt-BR'
+    recognition.lang = 'en-US'
     recognition.interimResults = true
     let failed = false
-    recognition.onstart = () => { setListening(true); setStatus('Ouvindo. Diga tudo que está na sua cabeça.') }
+    recognition.onstart = () => { setListening(true); setStatus('Listening. Say everything on your mind.') }
     recognition.onresult = (event: any) => {
       let transcript = ''
       for (let index = 0; index < event.results.length && transcript.length < MAX_NOTE_LENGTH; index += 1) {
@@ -74,16 +74,16 @@ export default function App() {
       }
       setNote(transcript)
     }
-    recognition.onerror = () => { failed = true; setStatus('Não foi possível ouvir você. Tente de novo ou digite sua ideia.') }
-    recognition.onend = () => { setListening(false); if (!failed) setStatus('Revise a transcrição e organize seu dia.') }
+    recognition.onerror = () => { failed = true; setStatus('I could not hear you. Try again or type your thought.') }
+    recognition.onend = () => { setListening(false); if (!failed) setStatus('Review the transcript, then shape your day.') }
     recognition.start()
   }
 
   const clear = () => {
-    if (!agenda.active.length || window.confirm('Limpar todos os itens ativos da agenda? Os concluídos continuarão no arquivo.')) {
+    if (!agenda.active.length || window.confirm('Clear all active items? Completed items will stay in your archive.')) {
       setAgenda((current) => ({ ...current, active: [] }))
       setNote('')
-      setStatus('Um dia em branco está pronto para sua voz.')
+      setStatus('A blank day is ready for your voice.')
     }
   }
 
@@ -92,58 +92,58 @@ export default function App() {
       const item = current.active.find((entry) => entry.id === id)
       return item ? { active: current.active.filter((entry) => entry.id !== id), archived: [item, ...current.archived].slice(0, MAX_ITEMS) } : current
     })
-    setStatus('Concluído e guardado no arquivo.')
+    setStatus('Completed and moved to your archive.')
   }
 
   return <main className="voice-app">
     <aside className="rail">
       <div className="logo">Atlas<span>·</span></div>
-      <nav aria-label="Seções do Atlas">
-        <button className={view === 'today' ? 'rail-link selected' : 'rail-link'} onClick={() => setView('today')}><i>◌</i>Hoje</button>
-        <button className={view === 'archive' ? 'rail-link selected' : 'rail-link'} onClick={() => setView('archive')}><i>□</i>Arquivo</button>
+      <nav aria-label="Atlas sections">
+        <button className={view === 'today' ? 'rail-link selected' : 'rail-link'} onClick={() => setView('today')}><i>◌</i>Today</button>
+        <button className={view === 'archive' ? 'rail-link selected' : 'rail-link'} onClick={() => setView('archive')}><i>□</i>Archive</button>
       </nav>
-      <div className="rail-foot"><span className="secure-dot"/>Neste dispositivo</div>
+      <div className="rail-foot"><span className="secure-dot"/>On this device</div>
     </aside>
     <section className="voice-workspace">
       <header className="voice-header">
-        <span>{new Intl.DateTimeFormat('pt-BR', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date())}</span>
+        <span>{new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'long', day: 'numeric' }).format(new Date())}</span>
         <div>
-          <button className="theme-toggle" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Alternar tema"><span>{theme === 'dark' ? '☾' : '☀'}</span><small>{theme === 'dark' ? 'Escuro' : 'Claro'}</small></button>
-          <button className="quiet-action" onClick={clear}>Limpar dia</button>
+          <button className="theme-toggle" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle theme"><span>{theme === 'dark' ? '☾' : '☀'}</span><small>{theme === 'dark' ? 'Dark' : 'Light'}</small></button>
+          <button className="quiet-action" onClick={clear}>Clear day</button>
         </div>
       </header>
       {view === 'today' ? <div className="voice-main">
         <section className="capture">
-          <p className="eyebrow">Organizador diário por voz</p>
-          <h1>Seu dia, <em>sem burocracia.</em></h1>
-          <p className="lede">Fale como você se lembra. O Atlas separa eventos, rotinas e pendências em uma linha do tempo prática.</p>
+          <p className="eyebrow">Voice-first daily planning</p>
+          <h1>Your day, <em>without the noise.</em></h1>
+          <p className="lede">Say it the way it arrives in your head. Atlas turns the mess into a calm, usable timeline.</p>
           <div className={listening ? 'voice-orb listening' : 'voice-orb'}>
-            <button onClick={listen} aria-label="Começar a falar"><span className="mic">⌁</span><strong>{listening ? 'Ouvindo' : 'Falar'}</strong></button>
+            <button onClick={listen} aria-label="Start speaking"><span className="mic">⌁</span><strong>{listening ? 'Listening' : 'Speak'}</strong></button>
             <div className="sound"><i/><i/><i/><i/><i/></div>
           </div>
           <p className="voice-status" aria-live="polite">{status}</p>
           <div className="note-box">
-            <label className="sr-only" htmlFor="daily-note">Conte como está seu dia</label>
-            <textarea id="daily-note" value={note} maxLength={MAX_NOTE_LENGTH} onChange={(event) => setNote(event.target.value)} placeholder="Ou escreva uma ideia ainda desorganizada…" />
-            <div><button className="example-button" onClick={() => { setNote(example); organize(example) }}>Ver exemplo</button><button className="organize-button" onClick={() => organize()}>Organizar meu dia <span>→</span></button></div>
+            <label className="sr-only" htmlFor="daily-note">Describe your day</label>
+            <textarea id="daily-note" value={note} maxLength={MAX_NOTE_LENGTH} onChange={(event) => setNote(event.target.value)} placeholder="Or write down an unfiltered thought…" />
+            <div><button className="example-button" onClick={() => { setNote(example); organize(example) }}>Try an example</button><button className="organize-button" onClick={() => organize()}>Shape my day <span>→</span></button></div>
           </div>
         </section>
         <Timeline items={agenda.active} scheduled={scheduled} tasks={tasks} onComplete={complete} />
       </div> : <Archive items={agenda.archived} />}
-      <footer><span>Sem conta. Sem nuvem Atlas. Sem prompts.</span><span>O Atlas não grava áudio; a privacidade da transcrição depende do navegador.</span></footer>
+      <footer><span>No account. No Atlas cloud. No prompts.</span><span>Atlas never records audio; transcript privacy depends on your browser.</span></footer>
     </section>
   </main>
 }
 
 function Timeline({ items, scheduled, tasks, onComplete }: { items: RoutineItem[]; scheduled: RoutineItem[]; tasks: RoutineItem[]; onComplete: (id: string) => void }) {
-  return <section className="day-view"><div className="section-top"><div><p className="eyebrow">Sua linha do tempo</p><h2>{items.length ? 'Seu dia, agora claro.' : 'Seu dia está esperando.'}</h2></div>{items.length > 0 && <span className="count">{items.length} capturados</span>}</div>{items.length === 0 ? <div className="empty"><span>◌</span><strong>Comece com uma ideia desorganizada.</strong><p>“Tenho uma reunião às 9, academia às 18 e preciso enviar a proposta.”</p></div> : <div className="timeline"><div className="timeline-label">Com horário</div>{scheduled.map((item) => <AgendaRow item={item} key={item.id} onComplete={onComplete}/>)}{tasks.length > 0 && <><div className="timeline-label tasks-label">Pendências</div>{tasks.map((item) => <AgendaRow item={item} key={item.id} onComplete={onComplete}/>)}</>}</div>}</section>
+  return <section className="day-view"><div className="section-top"><div><p className="eyebrow">Your timeline</p><h2>{items.length ? 'The day, made clear.' : 'Your day is waiting.'}</h2></div>{items.length > 0 && <span className="count">{items.length} captured</span>}</div>{items.length === 0 ? <div className="empty"><span>◌</span><strong>Start with an unfiltered thought.</strong><p>“Team sync at 9, gym at 6pm, and send the client proposal.”</p></div> : <div className="timeline"><div className="timeline-label">Scheduled</div>{scheduled.map((item) => <AgendaRow item={item} key={item.id} onComplete={onComplete}/>)}{tasks.length > 0 && <><div className="timeline-label tasks-label">Loose ends</div>{tasks.map((item) => <AgendaRow item={item} key={item.id} onComplete={onComplete}/>)}</>}</div>}</section>
 }
 
 function Archive({ items }: { items: RoutineItem[] }) {
-  return <section className="archive-view"><div className="section-top"><div><p className="eyebrow">Itens concluídos</p><h2>O que já saiu da cabeça.</h2></div><span className="count">{items.length} no arquivo</span></div>{items.length ? <div className="timeline">{items.map((item) => <article className="agenda-row" key={item.id}><div className="time">✓</div><span className="timeline-dot"/><div className="agenda-copy"><strong>{item.title}</strong><small>Concluído</small></div></article>)}</div> : <div className="empty"><span>□</span><strong>Nada concluído ainda.</strong><p>Ao marcar um item como feito, ele aparecerá aqui.</p></div>}</section>
+  return <section className="archive-view"><div className="section-top"><div><p className="eyebrow">Completed items</p><h2>What left your head.</h2></div><span className="count">{items.length} archived</span></div>{items.length ? <div className="timeline">{items.map((item) => <article className="agenda-row" key={item.id}><div className="time">✓</div><span className="timeline-dot"/><div className="agenda-copy"><strong>{item.title}</strong><small>Completed</small></div></article>)}</div> : <div className="empty"><span>□</span><strong>Nothing completed yet.</strong><p>Mark an item done and it will appear here.</p></div>}</section>
 }
 
 function AgendaRow({ item, onComplete }: { item: RoutineItem; onComplete: (id: string) => void }) {
-  return <article className={item.kind === 'task' ? 'agenda-row task' : 'agenda-row'}><div className="time">{item.start ?? '—'}</div><span className="timeline-dot"/><div className="agenda-copy"><strong>{item.title}</strong><small>{item.recurring ? 'Rotina recorrente' : item.kind === 'task' ? 'Sem horário' : `${item.duration} min reservados`}</small></div><button className="row-action" onClick={() => onComplete(item.id)} aria-label={`Marcar ${item.title} como concluído`}>✓</button></article>
+  return <article className={item.kind === 'task' ? 'agenda-row task' : 'agenda-row'}><div className="time">{item.start ?? '—'}</div><span className="timeline-dot"/><div className="agenda-copy"><strong>{item.title}</strong><small>{item.recurring ? 'Recurring routine' : item.kind === 'task' ? 'No time assigned' : `${item.duration} min reserved`}</small></div><button className="row-action" onClick={() => onComplete(item.id)} aria-label={`Mark ${item.title} as complete`}>✓</button></article>
 }
 
