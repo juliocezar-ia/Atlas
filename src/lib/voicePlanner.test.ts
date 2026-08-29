@@ -30,6 +30,7 @@ describe('organizeVoiceNote', () => {
     const items = organizeVoiceNote(note)
     expect(items).toHaveLength(200)
     expect(items.every((item) => item.source.length <= 1000)).toBe(true)
+    expect(items.every((item) => item.title.length <= 500)).toBe(true)
   })
 })
 
